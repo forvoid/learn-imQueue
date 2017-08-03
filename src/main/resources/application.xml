@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
+                           http://www.springframework.org/schema/tx
+                           http://www.springframework.org/schema/tx/spring-tx-4.1.xsd
+                           http://www.springframework.org/schema/context
+                           http://www.springframework.org/schema/context/spring-context-4.1.xsd">
+
+    <import resource="application-myabtis.xml"/>
+    <import resource="application-aop.xml"/>
+    <context:annotation-config/>
+    <context:component-scan base-package="com.forvoid"/>
+    <bean id="poolConfig" class="redis.clients.jedis.JedisPoolConfig">
+        <property name="maxIdle" value="500"/>
+        <property name="maxTotal" value="100"/>
+        <property name="maxWaitMillis" value="5000"/>
+        <property name="testOnBorrow" value="true"/>
+    </bean>
+
+    <bean id="connectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
+        <property name="hostName" value="localhost"/>
+        <property name="port" value="6379"/>
+        <property name="password" value=""/>
+        <property name="poolConfig" ref="poolConfig"/>
+
+    </bean>
+    <!--p:host-name="${redis.host}"-->
+    <!--p:port="${redis.port}"-->
+    <!--p:password="${redis.pass}"-->
+    <!--p:pool-config-ref="poolConfig"-->
+    <bean id="stringSerializer" class="org.springframework.data.redis.serializer.StringRedisSerializer"/>
+    <!--<tx:annotation-driven/>-->
+    <!--<bean id="transactionManager" class="org.springframework"-->
+    <!-- 开启事务，可以通过transcational注解控制 -->
+
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">
+        <property name="connectionFactory" ref="connectionFactory"/>
+        <property name="keySerializer" ref="stringSerializer"/>
+        <property name="enableTransactionSupport" value="true"/>
+    </bean>
+    <!--<bean id="stringRedisSerializer"-->
+    <!--class="org.springframework.data.redis.serializer.StringRedisSerializer" />-->
+
+    <!--定时任务-->
+
+    <bean id="executor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+        <property name="corePoolSize" value="10"/>
+        <property name="maxPoolSize" value="100"/>
+        <property name="queueCapacity" value="500"/>
+    </bean>
+    <!--业务实体-->
+    <bean id="orderFlowJob" class="com.forvoid.JobTask.OrderFlowJob" />
+    <!-- 调度业务 -->
+    <bean id="jobDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="orderFlowJob" />
+        <property name="targetMethod" value="execute" />
+    </bean>
+    <!--触发器-->
+    <!-- 调度触发器 -->
+    <!--触发器的bean的设置，在这里我们设置了我们要触发的jobDetail是哪个。
+    这里我们定义了要触发的jobDetail是searchEngerneTask，即触发器去触发哪个bean。
+    并且我们还定义了触发的时间。
+    spring版本<3.1，quartz版本为1.x，class使用CronTriggerBean；
+    spring版本>3.1，quartz版本为2.x，class使用CronTriggerFactoryBean；尽量按这两种方式使用-->
+    <bean id="cronTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="jobDetail" />
+        <property name="cronExpression" value="0 0/1 * * * ?" />
+    </bean>
+
+    <!--管理触发器的总设置,管理我们的触发器列表,可以在bean的list中放置多个触发器。 -->
+    <bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers" >
+            <list>
+                <ref bean="cronTrigger" />
+            </list>
+        </property>
+    </bean>
+
+</beans>

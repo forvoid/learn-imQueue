@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forvoid.mapper.OrderMapper">
+    <resultMap id="BaseResultMap" type="com.forvoid.bo.Order">
+        <id property="oid" column="oid"/>
+        <result property="name" column="order_name"/>
+        <result property="code" column="order_code"/>
+        <result property="startTime" column="startTime"/>
+    </resultMap>
+    <select id="select" resultMap="BaseResultMap">
+        select * from orders
+    </select>
+    <insert id="saveOrder" parameterType="com.forvoid.bo.Order"
+            useGeneratedKeys="true" keyProperty="oid">
+      insert into orders
+      <trim prefix="(" suffix=")" suffixOverrides=",">
+          <if test="oid!=null">
+              oid,
+          </if>
+          <if test="name != null">
+              order_name,
+          </if>
+          <if test="code != null">
+              order_code,
+          </if>
+          <if test="startTime != null">
+              startTime,
+          </if>
+      </trim>
+
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="oid!=null">
+                #{oid},
+            </if>
+            <if test="name != null">
+                #{name},
+            </if>
+            <if test="code != null">
+                 #{code},
+            </if>
+            <if test="startTime != null">
+                #{startTime,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+
+    </insert>
+</mapper>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
+                           http://www.springframework.org/schema/tx
+                           http://www.springframework.org/schema/tx/spring-tx-4.1.xsd
+                           http://www.springframework.org/schema/context
+                           http://www.springframework.org/schema/context/spring-context-4.1.xsd">
+    <bean id="dataSource_1" class="com.alibaba.druid.pool.DruidDataSource" init-method="init"
+          destroy-method="close">
+        <property name="url" value="jdbc:mysql://120.24.222.101:3306/learn-redis2?useUnicode=true&amp;characterEncoding=UTF-8"/>
+        <property name="username" value="root"/>
+        <property name="password" value="Tao15987."/>
+        <!--初始化连接池大小-->
+        <property name="initialSize" value="0"/>
+        <!--最大活跃的连接池-->
+        <property name="maxActive" value="30"/>
+    </bean>
+    <!--<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">-->
+        <!--<property name="dataSource" ref="dataSource"/>-->
+        <!--<property name="mapperLocations" value="com/forvoid/mapper/*.xml"/>-->
+    <!--</bean>-->
+    <!--<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">-->
+        <!--<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>-->
+        <!--<property name="basePackage" value="com.forvoid.mapper"/>-->
+
+    <!--</bean>-->
+
+    <!--&lt;!&ndash;事务管理器&ndash;&gt;-->
+    <!--<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">-->
+        <!--<property name="dataSource" ref="dataSource"/>-->
+    <!--</bean>-->
+
+    <bean id="dataSource_2" class="com.alibaba.druid.pool.DruidDataSource"
+          init-method="init" destroy-method="close">
+        <property name="url" value="jdbc:mysql://120.24.222.101:3306/learn-redis?useUnicode=true&amp;characterEncoding=UTF-8"/>
+        <property name="username" value="root"/>
+        <property name="password" value="Tao15987."/>
+
+        <property name="initialSize" value="0"/>
+        <property name="maxActive" value="20" />
+        <property name="maxWait" value="60000"/>
+    </bean>
+
+    <!--<bean id="sqlSessionFactory_slave" class="org.mybatis.spring.SqlSessionFactoryBean">-->
+        <!--<property name="dataSource" ref="dataSource_2" />-->
+        <!--<property name="mapperLocations" value="classpath*:com/forvoid/mapper2/*.xml" />-->
+    <!--</bean>-->
+    <!--&lt;!&ndash; Transaction manager for a single JDBC DataSource &ndash;&gt;-->
+    <!--<bean id="transactionManager_2" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">-->
+        <!--<property name="dataSource" ref="dataSource_2" />-->
+    <!--</bean>-->
+    <!--&lt;!&ndash; 使用annotation定义事务 &ndash;&gt;-->
+    <!--<tx:annotation-driven transaction-manager="transactionManager_2" />-->
+
+    <!--<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">-->
+        <!--<property name="basePackage" value="com.forvoid" />-->
+        <!--<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory_slave"/>-->
+    <!--</bean>-->
+
+
+    <!--两个数据库整合-->
+    <bean id="dataSource" class="com.forvoid.util.ThreadLocalRountingDataSource">
+        <property name="defaultTargetDataSource" ref="dataSource_1"/>
+        <property name="targetDataSources">
+            <map key-type="com.forvoid.enums.DataSource">
+                <entry key="MASTER" value-ref="dataSource_1"/>
+                <entry key="SLAVE" value-ref="dataSource_2"/>
+            </map>
+        </property>
+    </bean>
+    <!--创建sqlsessionFactory-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="mapperLocations" value="com/forvoid/**/*.xml"/>
+    </bean>
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.forvoid" />
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+    </bean>
+
+    <!--使用事物管理-->
+    <bean id="transactionManager"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!--事务模板 -->
+    <bean id="transactionTemplate"
+          class="org.springframework.transaction.support.TransactionTemplate">
+        <property name="transactionManager"
+            ref="transactionManager" />
+        <!--ISOLATION_DEFAULT 表示由使用的数据库决定  -->
+        <property name="isolationLevelName" value="ISOLATION_DEFAULT"/>
+        <property name="propagationBehaviorName" value="PROPAGATION_REQUIRED"/>
+        <!-- <property name="timeout" value="30"/> -->
+    </bean>
+
+    <!--使用注释进行事物的定义-->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+</beans>
+
+
+
+
+
